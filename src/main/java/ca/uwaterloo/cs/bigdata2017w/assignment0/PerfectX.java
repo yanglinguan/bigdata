@@ -16,6 +16,7 @@
 
 package ca.uwaterloo.cs.bigdata2017w.assignment0;
 
+import io.bespin.java.util.Tokenizer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
@@ -41,7 +42,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.StringTokenizer;
 
 /**
  * Simple word count demo.
@@ -58,24 +58,15 @@ public class PerfectX extends Configured implements Tool {
     @Override
     public void map(LongWritable key, Text value, Context context)
         throws IOException, InterruptedException {
-      String line = value.toString();
-      StringTokenizer itr = new StringTokenizer(line);
-      while (itr.hasMoreTokens()) {
-//         String w = itr.nextToken().toLowerCase().replaceAll("(^[^a-z]+|[^a-z]+$)", "");
-//         if (w.length() == 0) continue;
-//         WORD.set(w);
-//         context.write(WORD, ONE);
-			
-		String w = itr.nextToken().toLowerCase().replaceAll("(^[^a-z]+|[^a-z]+$)", "");
-		if (w.length() == 0) continue;
-		if (w.equals("perfect")) {
-		  if (itr.hasMoreTokens()) {
-			String followWord = itr.nextToken().toLowerCase().replaceAll("(^[^a-z]+|[^a-z]+$)", "");
-			if (followWord.length() == 0) continue;
-		      WORD.set(followWord);
-			  context.write(WORD, ONE);
-		  }
-		}
+
+      String preWord = "";
+
+      for (String word : Tokenizer.tokenize(value.toString())) {
+        if (preWord.equals("perfect")) {
+          WORD.set(word);
+          context.write(WORD, ONE);
+        }
+        preWord = word;
       }
     }
   }
@@ -86,15 +77,11 @@ public class PerfectX extends Configured implements Tool {
     @Override
     public void map(LongWritable key, Text value, Context context)
         throws IOException, InterruptedException {
-      String line = value.toString();
-      StringTokenizer itr = new StringTokenizer(line);
-	  while (itr.hasMoreTokens()) {
-        String w = itr.nextToken().toLowerCase().replaceAll("(^[^a-z]+|[^a-z]+$)", "");
-        if (w.length() == 0) continue;
-        if (counts.containsKey(w)) {
-          counts.put(w, counts.get(w)+1);
+      for (String word : Tokenizer.tokenize(value.toString())) {
+        if (counts.containsKey(word)) {
+          counts.put(word, counts.get(word)+1);
         } else {
-          counts.put(w, 1);
+          counts.put(word, 1);
         }
       }
     }
