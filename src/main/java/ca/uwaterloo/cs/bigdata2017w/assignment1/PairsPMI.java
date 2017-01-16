@@ -113,7 +113,7 @@ public class PairsPMI extends Configured implements Tool {
 
         private int threshold = 1;
 
-        private HashMap<String, Float> counts = new HashMap<String, Float>();
+        private HashMap<String, Float> counts = new HashMap();
 
 
         @Override
