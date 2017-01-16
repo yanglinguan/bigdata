@@ -41,7 +41,6 @@ public class PairsPMI extends Configured implements Tool {
         private static final FloatWritable ONE = new FloatWritable(1);
         private static final FloatWritable LINE = new FloatWritable();
         private static final PairOfStrings PAIR = new PairOfStrings();
-        private static final IntWritable UNIQUEPAIRONE = new IntWritable(1);
         private static final Logger mapperLog = Logger.getLogger(MyMapper.class);
         private static final int MAX = 40;
         private int lineno = 0;
@@ -110,7 +109,7 @@ public class PairsPMI extends Configured implements Tool {
     private static final class MyReducer extends
             Reducer<PairOfStrings, FloatWritable, PairOfStrings, PairOfFloatInt> {
         private static final PairOfFloatInt VALUE = new PairOfFloatInt();
-        private float marginal = 0.0f;
+
         private float line = 0.0f;
 
         private int threshold = 1;
@@ -133,23 +132,25 @@ public class PairsPMI extends Configured implements Tool {
             }
 
 
-            if(key.getLeftElement().equals("*")) {
-                if(key.getRightElement().equals("*")) {
-                    VALUE.set(1, (int) sum);
-                    //context.write(key, VALUE);
-                    line = sum;
+            if(sum >= threshold) {
+                if (key.getLeftElement().equals("*")) {
+                    if (key.getRightElement().equals("*")) {
+                        //VALUE.set(1, (int) sum);
+                        //context.write(key, VALUE);
+                        line = sum;
+                    } else {
+                        counts.put(key.getRightElement(), sum);
+                       // VALUE.set(1, (int) sum);
+                        //context.write(key, VALUE);
+                        //line = sum;
+                    }
                 } else {
-                    counts.put(key.getRightElement(), sum);
-                    VALUE.set(1, (int) sum);
-                    //context.write(key, VALUE);
-                    //line = sum;
-                }
-            } else  {
-                if(sum >= threshold) {
-                    float ne = sum * line;
-                    float de = counts.get(key.getRightElement()) * counts.get(key.getLeftElement());
-                    VALUE.set((float) (Math.log10(ne / de)), (int) sum);
-                    context.write(key, VALUE);
+                    //if (sum >= threshold) {
+                        float ne = sum * line;
+                        float de = counts.get(key.getRightElement()) * counts.get(key.getLeftElement());
+                        VALUE.set((float) (Math.log10(ne / de)), (int) sum);
+                        context.write(key, VALUE);
+                    //}
                 }
             }
 
