@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" autoUpload="Always" serverName="uwaterloo" uploadOnCheckin="ba33ef42-25ce-49ba-aa35-4eb1ee61c649">
+    <serverData>
+      <paths name="altiscale">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="uwaterloo">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+    <option name="myUploadOnCheckinName" value="uwaterloo" />
+    <option name="myAutoUpload" value="ALWAYS" />
+  </component>
+</project>

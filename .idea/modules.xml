@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$USER_HOME$/bespin/bespin.iml" filepath="$USER_HOME$/bespin/bespin.iml" />
+      <module fileurl="file://$PROJECT_DIR$/bigdata2017w.iml" filepath="$PROJECT_DIR$/bigdata2017w.iml" />
+    </modules>
+  </component>
+</project>

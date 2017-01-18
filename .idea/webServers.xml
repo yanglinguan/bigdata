@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="ba33ef42-25ce-49ba-aa35-4eb1ee61c649" name="uwaterloo" url="http://linux.student.cs.uwaterloo.ca">
+        <fileTransfer host="linux.student.cs.uwaterloo.ca" port="22" rootFolder="/u2/l69yang/cs489/bigdata2017w" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+      <webServer id="55c04bee-e9c5-4cc5-9e94-c81e44649e1e" name="altiscale" url="http://ia.z42.altiscale.com">
+        <fileTransfer host="ia.z42.altiscale.com" port="1656" privateKey="$USER_HOME$/keypair" rootFolder="/home/l69yang/bigdata2017w" accessType="SFTP" keyPair="true">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="1656" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
