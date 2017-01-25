@@ -15,8 +15,8 @@ object StripesPMI extends Tokenizer{
 
   val log = Logger.getLogger(getClass().getName())
 
-  implicit def mapAccum = new AccumulableParam[mutable.Map[String, Float], (String, Float)] {
-    override def addInPlace(t1: mutable.Map[String, Float], t2: mutable.Map[String, Float]): mutable.Map[String, Float] = {
+  implicit def mapAccum = new AccumulableParam[mutable.HashMap[String, Float], (String, Float)] {
+    override def addInPlace(t1: mutable.HashMap[String, Float], t2: mutable.HashMap[String, Float]): mutable.HashMap[String, Float] = {
       t2.foreach(x => {
         if(t1.contains(x._1)) {
           t1(x._1) += x._2
@@ -27,7 +27,7 @@ object StripesPMI extends Tokenizer{
       t1
     }
 
-    override def addAccumulator(t1: mutable.Map[String, Float], t2: (String, Float)): mutable.Map[String, Float] = {
+    override def addAccumulator(t1: mutable.HashMap[String, Float], t2: (String, Float)): mutable.HashMap[String, Float] = {
       if(t1.contains(t2._1)) {
         t1(t2._1) += t2._2
       } else {
@@ -36,7 +36,7 @@ object StripesPMI extends Tokenizer{
       t1
     }
 
-    override def zero(t: mutable.Map[String, Float]): mutable.Map[String, Float] = mutable.Map[String, Float]()
+    override def zero(t: mutable.HashMap[String, Float]): mutable.HashMap[String, Float] = new mutable.HashMap[String, Float]()
   }
   def main(argv: Array[String]) {
     val args = new PMIConf(argv)
@@ -56,14 +56,14 @@ object StripesPMI extends Tokenizer{
     val textFile = sc.textFile(args.input())
 
 
-    val words: Accumulable[mutable.Map[String, Float], (String, Float)] = sc.accumulable(mutable.Map[String, Float]())
+    val words: Accumulable[mutable.HashMap[String, Float], (String, Float)] = sc.accumulable(new mutable.HashMap[String, Float]())
 
     var lines = sc.accumulator(0f)
 
     val co = textFile.flatMap(line => {
       lines += 1f
       val tokens = tokenize(line)
-      var countWords:scala.collection.mutable.HashSet[String] = scala.collection.mutable.HashSet[String]()
+      var countWords:mutable.HashSet[String] = new mutable.HashSet[String]()
       val size = Math.min(39, tokens.size - 1)
 
       for( i <- 0 to size ) {
@@ -77,19 +77,19 @@ object StripesPMI extends Tokenizer{
         words += (x, 1.0f)
       })
 
-      var strips:mutable.Map[String, mutable.Map[String, Float]] = mutable.Map()
+      var strips:mutable.HashMap[String, mutable.HashMap[String, Float]] = new mutable.HashMap[String, mutable.HashMap[String, Float]]()
       countWords.foreach(x => {
         countWords.foreach(y => {
           if(x != y) {
             if(strips.contains(x)) {
-              val strip:mutable.Map[String, Float] = strips(x)
+              val strip:mutable.HashMap[String, Float] = strips(x)
               if(strip.contains(y)) {
                 strips(x)(y) += 1.0f
               } else {
                 strips(x) += y -> 1.0f
               }
             } else {
-              var strip:scala.collection.mutable.Map[String, Float] = scala.collection.mutable.Map()
+              var strip:mutable.HashMap[String, Float] = new mutable.HashMap[String, Float]()
               strip += y -> 1.0f
               strips += x -> strip
             }
@@ -101,7 +101,7 @@ object StripesPMI extends Tokenizer{
       .partitionBy(new HashPartitioner(args.reducers()))
       .persist()
       .reduceByKey((x, y) => {
-        var comMap:mutable.Map[String, Float] = mutable.Map()
+        val comMap:mutable.HashMap[String, Float] = new mutable.HashMap[String, Float]()
         x.foreach(t => {
           comMap += t._1 -> t._2
         })
@@ -123,7 +123,7 @@ object StripesPMI extends Tokenizer{
     //    log.warn("line: " + lines.value)
 
     val counts = co.map(x => {
-      var result = mutable.Map[String, (Float, Float)]()
+      val result = new mutable.HashMap[String, (Float, Float)]()
 
       x._2.filter(t => t._2 >= threshold)
         .foreach(t => {
@@ -132,10 +132,13 @@ object StripesPMI extends Tokenizer{
 
         })
       (x._1, result.toList)
-    }).map(x => {
+    }).filter(x => {
+      x._2.size > 0
+    })
+      .map(x => {
       x._1 + " {" + x._2.map(p => {
         p._1 + "=" + p._2
-      }).drop(5).dropRight(1) + "}"
+      }).toString().drop(5).dropRight(1) + "}"
     })
     counts.saveAsTextFile(args.output())
 

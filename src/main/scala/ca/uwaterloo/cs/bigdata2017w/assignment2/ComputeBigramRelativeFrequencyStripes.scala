@@ -5,6 +5,8 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.log4j.Logger
 import org.apache.spark.{HashPartitioner, SparkConf, SparkContext}
 
+import scala.collection.mutable
+
 /**
   * Created by yanglinguan on 17/1/23.
   */
@@ -31,20 +33,20 @@ object ComputeBigramRelativeFrequencyStripes extends Tokenizer {
     val counts = textFile
       .flatMap(line => {
         val tokens = tokenize(line)
-        var strips:scala.collection.mutable.Map[String, scala.collection.mutable.Map[String, Float]] = scala.collection.mutable.Map()
+        var strips:mutable.HashMap[String, mutable.HashMap[String, Float]] = new mutable.HashMap[String, mutable.HashMap[String, Float]]()
         if (tokens.length > 1) {
           tokens.sliding(2).foreach(p => {
             val prev = p(0)
             val cur = p(1)
             if(strips.contains(prev)) {
-              val strip:scala.collection.mutable.Map[String, Float] = strips(prev)
+              val strip:mutable.HashMap[String, Float] = strips(prev)
               if(strip.contains(cur)) {
                 strips(prev)(cur) += 1.0f
               } else {
                 strips(prev) += cur -> 1.0f
               }
             } else {
-              var strip:scala.collection.mutable.Map[String, Float] = scala.collection.mutable.Map()
+              var strip:mutable.HashMap[String, Float] = new mutable.HashMap[String, Float]()
               strip += cur -> 1.0f
               strips += prev -> strip
             }
@@ -57,7 +59,7 @@ object ComputeBigramRelativeFrequencyStripes extends Tokenizer {
       .partitionBy(new HashPartitioner(args.reducers()))
       .persist()
       .reduceByKey((x, y) => {
-        var comMap:scala.collection.mutable.Map[String, Float] = scala.collection.mutable.Map()
+        var comMap:mutable.HashMap[String, Float] = new mutable.HashMap[String, Float]()
         x.foreach(t => {
           comMap += t._1 -> t._2
         })
@@ -77,7 +79,7 @@ object ComputeBigramRelativeFrequencyStripes extends Tokenizer {
           sum += t._2
         })
 
-        var comMap:scala.collection.mutable.Map[String, Float] = scala.collection.mutable.Map()
+        var comMap:mutable.HashMap[String, Float] = new mutable.HashMap[String, Float]()
         x._2.foreach(t => {
           //x._2(t._1) = t._2/sum
           comMap += t._1 -> t._2/sum
@@ -86,7 +88,7 @@ object ComputeBigramRelativeFrequencyStripes extends Tokenizer {
       }).map(x => {
       x._1 + " {" + x._2.map(p => {
         p._1 + "=" + p._2
-      }).drop(5).dropRight(1) + "}"
+      }).toString().drop(5).dropRight(1) + "}"
     })
     counts.saveAsTextFile(args.output())
   }

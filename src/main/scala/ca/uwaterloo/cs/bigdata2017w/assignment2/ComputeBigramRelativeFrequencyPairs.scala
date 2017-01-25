@@ -11,11 +11,10 @@ import org.rogach.scallop.ScallopConf
   */
 
 class Conf(args: Seq[String]) extends ScallopConf(args) with Tokenizer {
-  mainOptions = Seq(input, output, reducers, threshold)
+  mainOptions = Seq(input, output, reducers)
   val input = opt[String](descr = "input path", required = true)
   val output = opt[String](descr = "output path", required = true)
   val reducers = opt[Int](descr = "number of reducers", required = false, default = Some(1))
-  val threshold = opt[Int](descr = "threshold", required = false, default = Some(10))
   verify()
 }
 

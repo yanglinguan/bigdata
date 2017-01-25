@@ -35,8 +35,8 @@ class PMIPartitioner(partitions: Int) extends Partitioner {
 object PairsPMI extends Tokenizer {
   val log = Logger.getLogger(getClass().getName())
 
-  implicit def mapAccum = new AccumulableParam[mutable.Map[String, Float], (String, Float)] {
-    override def addInPlace(t1: mutable.Map[String, Float], t2: mutable.Map[String, Float]): mutable.Map[String, Float] = {
+  implicit def mapAccum = new AccumulableParam[mutable.HashMap[String, Float], (String, Float)] {
+    override def addInPlace(t1: mutable.HashMap[String, Float], t2: mutable.HashMap[String, Float]): mutable.HashMap[String, Float] = {
       t2.foreach(x => {
         if(t1.contains(x._1)) {
           t1(x._1) += x._2
@@ -47,7 +47,7 @@ object PairsPMI extends Tokenizer {
       t1
     }
 
-    override def addAccumulator(t1: mutable.Map[String, Float], t2: (String, Float)): mutable.Map[String, Float] = {
+    override def addAccumulator(t1: mutable.HashMap[String, Float], t2: (String, Float)): mutable.HashMap[String, Float] = {
       if(t1.contains(t2._1)) {
         t1(t2._1) += t2._2
       } else {
@@ -56,7 +56,7 @@ object PairsPMI extends Tokenizer {
       t1
     }
 
-    override def zero(t: mutable.Map[String, Float]): mutable.Map[String, Float] = mutable.Map[String, Float]()
+    override def zero(t: mutable.HashMap[String, Float]): mutable.HashMap[String, Float] = new mutable.HashMap[String, Float]()
   }
 
 
@@ -78,23 +78,20 @@ object PairsPMI extends Tokenizer {
     val textFile = sc.textFile(args.input())
 
 
-    val words: Accumulable[mutable.Map[String, Float], (String, Float)] = sc.accumulable(mutable.Map[String, Float]())
+    val words: Accumulable[mutable.HashMap[String, Float], (String, Float)] = sc.accumulable(new mutable.HashMap[String, Float]())
 
     var lines = sc.accumulator(0f)
 
     val co = textFile.flatMap(line => {
       lines += 1f
       val tokens = tokenize(line)
-      var countWords:scala.collection.mutable.HashSet[String] = scala.collection.mutable.HashSet[String]()
+      var countWords:mutable.HashSet[String] = new mutable.HashSet[String]()
 
-      val size = Math.min(39, tokens.size)
+      val size = Math.min(39, tokens.size - 1)
 
       for( i <- 0 to size ) {
         countWords += tokens(i)
       }
-      //      tokens.foreach(x => {
-//        countWords += x
-//      })
 
       countWords.foreach(x => {
         words += (x, 1.0f)
@@ -121,9 +118,6 @@ object PairsPMI extends Tokenizer {
 
     val bWords = sc.broadcast(words.value)
     val bLineNo = sc.broadcast(lines.value)
-
-//    log.warn("size: " + bWords.value.size)
-//    log.warn("line: " + lines.value)
 
     val counts = co.map(x => {
       val pmi = Math.log10((x._2 * bLineNo.value) / (bWords.value(x._1._1) * bWords.value(x._1._2)))
