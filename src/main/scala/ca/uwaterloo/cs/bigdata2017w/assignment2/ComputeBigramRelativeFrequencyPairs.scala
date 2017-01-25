@@ -11,10 +11,11 @@ import org.rogach.scallop.ScallopConf
   */
 
 class Conf(args: Seq[String]) extends ScallopConf(args) with Tokenizer {
-  mainOptions = Seq(input, output, reducers)
+  mainOptions = Seq(input, output, reducers, threshold)
   val input = opt[String](descr = "input path", required = true)
   val output = opt[String](descr = "output path", required = true)
   val reducers = opt[Int](descr = "number of reducers", required = false, default = Some(1))
+  val threshold = opt[Int](descr = "threshold", required = false, default = Some(10))
   verify()
 }
 
@@ -73,7 +74,9 @@ object ComputeBigramRelativeFrequencyPairs extends Tokenizer {
         } else {
           ((l(0), l(1)), x._2.toFloat/marginal)
         }
-      })
+      }).map(x => {
+      x._1 + " " + x._2
+    })
 
     counts.saveAsTextFile(args.output())
   }

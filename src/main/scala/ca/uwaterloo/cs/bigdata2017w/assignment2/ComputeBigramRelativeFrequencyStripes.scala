@@ -20,7 +20,7 @@ object ComputeBigramRelativeFrequencyStripes extends Tokenizer {
     log.info("Output: " + args.output())
     log.info("Number of reducers: " + args.reducers())
 
-    val conf = new SparkConf().setAppName("ComputeBigramRelativeFrequencyPairs")
+    val conf = new SparkConf().setAppName("ComputeBigramRelativeFrequencyStripes")
     val sc = new SparkContext(conf)
 
     val outputDir = new Path(args.output())
@@ -82,8 +82,12 @@ object ComputeBigramRelativeFrequencyStripes extends Tokenizer {
           //x._2(t._1) = t._2/sum
           comMap += t._1 -> t._2/sum
         })
-        (x._1, comMap)
-      })
+        (x._1, comMap.toList)
+      }).map(x => {
+      x._1 + " {" + x._2.map(p => {
+        p._1 + "=" + p._2
+      }).drop(5).dropRight(1) + "}"
+    })
     counts.saveAsTextFile(args.output())
   }
 }
