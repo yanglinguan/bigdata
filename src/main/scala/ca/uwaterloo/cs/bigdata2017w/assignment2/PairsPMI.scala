@@ -110,11 +110,12 @@ object PairsPMI extends Tokenizer {
       lword.toList
     })
       .map(x => (x, 1f))
+      .reduceByKey(_+_)
       .partitionBy(new PMIPartitioner(args.reducers()))
       .persist()
-      .reduceByKey(_+_)
-      .filter(x => x._2 >= threshold)
       .sortByKey()
+//      .reduceByKey(_+_)
+      .filter(x => x._2 >= threshold)
 
     val bWords = sc.broadcast(words.value)
     val bLineNo = sc.broadcast(lines.value)
