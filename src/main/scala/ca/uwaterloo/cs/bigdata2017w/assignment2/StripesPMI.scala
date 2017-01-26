@@ -113,9 +113,12 @@ object StripesPMI extends Tokenizer{
       x._2.size > 0
     })
       .map(x => {
-      x._1 + " {" + x._2.map(p => {
-        p._1 + "=" + p._2
-      }).toString().drop(5).dropRight(1) + "}"
+        val s = new StringBuilder(x._1)
+        s.append(" {")
+        x._2.foreach(p=> {
+          s.append(p._1).append("=").append(p._2).append(", ")
+        })
+        s.dropRight(2).append("}").toString()
     })
     counts.saveAsTextFile(args.output())
 

@@ -63,20 +63,6 @@ object ComputeBigramRelativeFrequencyStripes extends Tokenizer {
       //.sortByKey()
       .reduceByKey((x, y) => {
         x ++ y.map{ case (k,v) => k -> (v + x.getOrElse(k, 0f))}
-
-      //        var comMap:mutable.HashMap[String, Float] = new mutable.HashMap[String, Float]()
-//        x.foreach(t => {
-//          comMap += t._1 -> t._2
-//        })
-//        y.foreach(t => {
-//          val tt = comMap.get(t._1)
-//          if(tt.isEmpty) {
-//            comMap += t._1 -> t._2
-//          } else {
-//            comMap(t._1) += t._2
-//          }
-//        })
-//         comMap
       })
       .map(x =>{
         var sum = 0.0f
@@ -85,18 +71,17 @@ object ComputeBigramRelativeFrequencyStripes extends Tokenizer {
         })
 
         (x._1, x._2.mapValues(t => t/sum).toList)
-      //  (x._1, x._2.toList)
 
-//        var comMap:mutable.HashMap[String, Float] = new mutable.HashMap[String, Float]()
-//        x._2.foreach(t => {
-//          //x._2(t._1) = t._2/sum
-//          comMap += t._1 -> t._2/sum
-//        })
-//        (x._1, comMap.toList)
       }).map(x => {
-      x._1 + " {" + x._2.map(p => {
-        p._1 + "=" + p._2
-      }).toString().drop(5).dropRight(1) + "}"
+      val s = new StringBuilder(x._1)
+      s.append(" {")
+      x._2.foreach(p=> {
+        s.append(p._1).append("=").append(p._2).append(", ")
+      })
+      s.dropRight(2).append("}").toString()
+//      x._1 + " {" + x._2.map(p => {
+//        p._1 + "=" + p._2
+//      }).toString().drop(5).dropRight(1) + "}"
     })
     counts.saveAsTextFile(args.output())
   }
