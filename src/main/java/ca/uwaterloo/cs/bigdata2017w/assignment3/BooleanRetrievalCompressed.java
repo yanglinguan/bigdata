@@ -6,6 +6,7 @@ package ca.uwaterloo.cs.bigdata2017w.assignment3;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.*;
@@ -15,12 +16,10 @@ import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 import org.kohsuke.args4j.ParserProperties;
-import scala.util.hashing.ByteswapHashing;
 import tl.lin.data.array.ArrayListWritable;
 import tl.lin.data.pair.PairOfInts;
 import tl.lin.data.pair.PairOfWritables;
 
-import java.awt.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Set;
@@ -35,26 +34,15 @@ public class BooleanRetrievalCompressed extends Configured implements Tool {
     private BooleanRetrievalCompressed() {}
 
     private void initialize(String indexPath, String collectionPath, FileSystem fs) throws IOException {
-        File f = new File(indexPath);
         index = new ArrayList<>();
-        //System.out.println("number of files " + files);
 
-        int files = f.listFiles(new FileFilter() {
-            @Override
-            public boolean accept(File pathname) {
-                return pathname.getName().startsWith("part-r-");
+        FileStatus[] files = fs.listStatus(new Path(indexPath));
+
+        for(FileStatus f:files) {
+            if(f.isDirectory()) {
+                index.add(new MapFile.Reader(f.getPath(), fs.getConf()));
             }
-        }).length;
-
-//        for(File x: files) {
-//            index.add(new MapFile.Reader(new Path(indexPath + "/" + x.getName()), fs.getConf()));
-//        }
-
-        System.out.println("number of files " + files);
-        for(int i = 0; i < files; i++) {
-            index.add(new MapFile.Reader(new Path(indexPath + "/part-r-0000" + i), fs.getConf()));
         }
-       // index = new MapFile.Reader(new Path(indexPath + "/part-r-00000"), fs.getConf());
         collection = fs.open(new Path(collectionPath));
         stack = new Stack<>();
     }
@@ -128,30 +116,23 @@ public class BooleanRetrievalCompressed extends Configured implements Tool {
 
     private ArrayListWritable<PairOfInts> fetchPostings(String term) throws IOException {
         Text key = new Text();
-        PairOfWritables<IntWritable, BytesWritable> value =
+        PairOfWritables<VIntWritable, BytesWritable> value =
                 new PairOfWritables<>();
 
         ArrayListWritable<PairOfInts> x = new ArrayListWritable<>();
 
         key.set(term);
-      //  System.out.println("key: " + term);
         WritableUtils wu = new WritableUtils();
 
         for(MapFile.Reader e: index) {
             Writable t = e.get(key, value);
-        //    System.out.println("hello");
             if(t != null) {
                 break;
             }
         }
 
-
-     //   System.out.println("df: " + value.getLeftElement().get());
-
         DataInputStream input = new DataInputStream(new ByteArrayInputStream(value.getRightElement().getBytes()));
 
-       // System.out.println(input.read());
-      //  System.out.println("size: " + value.getRightElement().getBytes().length);
         int predocSum = 0;
         while(true) {
             try{
@@ -161,23 +142,10 @@ public class BooleanRetrievalCompressed extends Configured implements Tool {
                     predocSum += docno;
                     x.add(new PairOfInts(predocSum, tf));
                 }
-               // System.out.println("predocSum: " + predocSum + ", tf: " + tf);
-
             } catch( EOFException e){
                 break;
             }
         }
-       // System.out.println("1: " + wu.readVInt(input));
-        //System.out.println("2: " + wu.readVInt(input));
-
-       // System.out.println(wu.readVIntInRange(input, 0, input.read()));
-
-        //value.getRightElement();
-
-       // ArrayListWritable<PairOfInts> x = new ArrayListWritable<>();
-
-       // index.get(key, value);
-
         return x;
     }
 

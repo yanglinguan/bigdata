@@ -19,7 +19,6 @@ import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 import org.kohsuke.args4j.ParserProperties;
-import scala.Int;
 import tl.lin.data.fd.Object2IntFrequencyDistribution;
 import tl.lin.data.fd.Object2IntFrequencyDistributionEntry;
 import tl.lin.data.pair.PairOfObjectInt;
@@ -66,7 +65,7 @@ public class BuildInvertedIndexCompressed extends Configured implements Tool {
         private static String preTerm = "";
         private static int preDocNo = 0;
         private static final Text outkey = new Text();
-        private static final IntWritable DF = new IntWritable();
+        private static final VIntWritable DF = new VIntWritable();
         private static final BytesWritable outpostings = new BytesWritable();
         private static final PairOfWritables outValue = new PairOfWritables();
         private static ByteArrayOutputStream b = new ByteArrayOutputStream();
@@ -94,8 +93,6 @@ public class BuildInvertedIndexCompressed extends Configured implements Tool {
                 tf += iter.next().get();
             }
 
-//            LOG.info("term: " + key.getLeftElement() +"doc number: " + (key.getRightElement()));
-
             if(!key.getLeftElement().equals(preTerm) && !preTerm.equals("")) {
 
                 outpostings.set(b.toByteArray(), 0, b.size());
@@ -108,8 +105,6 @@ public class BuildInvertedIndexCompressed extends Configured implements Tool {
                 df = 0;
                 preDocNo = 0;
             }
-
-            LOG.info("doc number: " + (key.getRightElement() - preDocNo));
 
             WU.writeVInt(postings, key.getRightElement() - preDocNo);
             WU.writeVInt(postings, tf);
