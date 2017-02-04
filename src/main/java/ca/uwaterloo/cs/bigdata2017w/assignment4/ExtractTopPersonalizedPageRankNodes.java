@@ -12,6 +12,7 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.yarn.webapp.hamlet.HamletSpec;
 import org.apache.log4j.Logger;
+import scala.tools.cmd.gen.AnyVals;
 import tl.lin.data.array.ArrayListOfFloatsWritable;
 import tl.lin.data.array.FloatArrayWritable;
 
@@ -42,24 +43,37 @@ public class ExtractTopPersonalizedPageRankNodes extends Configured implements T
     private static int topValue = 0;
 
    // private static ArrayList<SequenceFile.Reader> iter = new ArrayList<>();
-    private static final ArrayList<ArrayList<Pair<Float, Integer>>> topList = new ArrayList<>();
+   // private static final ArrayList<ArrayList<Pair<Float, Integer>>> topList = new ArrayList<>();
 
-    //private static HashMap<Integer, ArrayList<Float>> topList = new HashMap<>();
+    private static HashMap<Integer, ArrayList<Pair<Float, Integer>>> topList = new HashMap<>();
 
     private void addTopList(int s, float p, int id) {
-        int idx = SOURCE_NODES.indexOf(s);
-        if(topList.get(idx).size() < topValue) {
-            topList.get(idx).add(new Pair<>(p, id));
-        } else {
-            for(int i = topValue - 1; i >= 0; i--) {
-                if(p > topList.get(idx).get(i).getFirst()) {
-                    for(int j = i ; j < topValue - 2; j++) {
-                        topList.get(idx).set(j + 1, topList.get(idx).get(j));
+        //int idx = SOURCE_NODES.indexOf(s);
+     //   LOG.info("key: " + id + ", page rank: " + p);
+        if(topList.containsKey(s)) {
+            int size = Math.min(topValue, topList.get(s).size());
+            if(size == 0) {
+                topList.get(s).add(new Pair<>(p, id));
+            } else {
+                boolean added = false;
+                for (int i = 0; i < size; i++) {
+                    if (p > topList.get(s).get(i).getFirst()) {
+                        topList.get(s).add(i, new Pair<>(p, id));
+                    //    LOG.info("added3 key: " + id + ", page rank: " + p);
+                        break;
                     }
-                    topList.get(idx).set(i, new Pair<>(p, id));
+                }
+                if(size < topValue && !added) {
+                    topList.get(s).add(new Pair<>(p, id));
                 }
             }
+        } else {
+            ArrayList<Pair<Float, Integer>> v = new ArrayList<>();
+            v.add(new Pair<>(p, id));
+            LOG.info("added4 key: " + id + ", page rank: " + p);
+            topList.put(s, v);
         }
+
     }
 
     private void getTop(String iterPath, FileSystem fs) throws IOException {
@@ -71,7 +85,7 @@ public class ExtractTopPersonalizedPageRankNodes extends Configured implements T
 
                 while (true) {
                     try {
-                        PersonalizedPageRankNode node = new PersonalizedPageRankNode();
+                        PageRankNode node = new PageRankNode();
                         IntWritable key = new IntWritable();
                         //int key = fin.readInt();
 
@@ -82,12 +96,12 @@ public class ExtractTopPersonalizedPageRankNodes extends Configured implements T
                         if(node.getType() != PageRankNode.Type.Complete) {
                             break;
                         }
-                        LOG.info("key: " + key + ", page rank: " + node.getPageRankList().get(0) + " "
-                                + node.getPageRankList().get(1) + node.getPageRankList().get(2));
+                       // LOG.info("key: " + key + ", page rank: " + node.getPageRank() + " ");
+//                                + node.getPageRankList().get(1) + node.getPageRankList().get(2));
 
                         for (int s : SOURCE_NODES) {
                             if(node.getType() == PageRankNode.Type.Complete) {
-                                addTopList(s, node.getPageRankForSource(s), node.getNodeId());
+                                addTopList(s, (float) StrictMath.exp(node.getPageRank()), node.getNodeId());
                             }
                         }
 
@@ -101,19 +115,13 @@ public class ExtractTopPersonalizedPageRankNodes extends Configured implements T
     }
 
     private void writeResult(FileSystem fs, String outPath) {
-       // Path outfile = new Path(outPath);
         for(int s: SOURCE_NODES) {
             System.out.println("Source: " + s);
-           // out.write("Source: " + s);
-            for(Pair<Float, Integer> e: topList.get(SOURCE_NODES.indexOf(s))){
-                System.out.println(e.getFirst() + ", " + e.getSecond());
+            for(int i = 0; i < topValue; i++) {
+                String printString = String.format("%.5f %d", topList.get(s).get(i).getFirst(), topList.get(s).get(i).getSecond());
+                System.out.println(printString);
             }
         }
-//        for(ArrayList<Pair<Float, Integer>> e: topList) {
-//            for(Pair<Float, Integer> p: e) {
-//
-//            }
-//        }
     }
 
     @Override
@@ -160,7 +168,7 @@ public class ExtractTopPersonalizedPageRankNodes extends Configured implements T
 //            topList.put(Integer.parseInt(s), new ArrayList<Float>(top));
 
             SOURCE_NODES.add(Integer.parseInt(s));
-            topList.add(new ArrayList<Pair<Float, Integer>>());
+            topList.put(Integer.parseInt(s), new ArrayList<Pair<Float, Integer>>());
         }
 
         FileSystem fs = FileSystem.get(new Configuration());
