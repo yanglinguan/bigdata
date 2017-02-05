@@ -99,9 +99,15 @@ public class ExtractTopPersonalizedPageRankNodes extends Configured implements T
                        // LOG.info("key: " + key + ", page rank: " + node.getPageRank() + " ");
 //                                + node.getPageRankList().get(1) + node.getPageRankList().get(2));
 
-                        for (int s : SOURCE_NODES) {
+//                        for (int s : SOURCE_NODES) {
+//                            if(node.getType() == PageRankNode.Type.Complete) {
+//                                addTopList(s, (float) StrictMath.exp(node.getPageRank(s)), node.getNodeId());
+//                            }
+//                        }
+
+                        for(int i = 0; i < SOURCE_NODES.size(); i++) {
                             if(node.getType() == PageRankNode.Type.Complete) {
-                                addTopList(s, (float) StrictMath.exp(node.getPageRank(s)), node.getNodeId());
+                                addTopList(SOURCE_NODES.get(i), (float) StrictMath.exp(node.getPageRank(i)), node.getNodeId());
                             }
                         }
 

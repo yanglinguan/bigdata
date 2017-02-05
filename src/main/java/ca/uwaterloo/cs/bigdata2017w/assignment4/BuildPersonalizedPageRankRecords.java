@@ -66,12 +66,16 @@ public class BuildPersonalizedPageRankRecords extends Configured implements Tool
             nid.set(id);
             for(int i: source) {
                 //int idx = SOURCE_NODES.indexOf(i);
+                int idx = source.indexOf(i);
                 if(i == id) {
-                    node.setPageRank(i, (float) StrictMath.log(1));
+//                    int idx = source.indexOf(i);
+//                    node.setPageRank(i, (float) StrictMath.log(1));
+                    node.setPageRank(idx, (float) StrictMath.log(1));
                    // node.setPageRank(idx, 1f);
                    // node.setPageRank(idx, (float) StrictMath.log(1));
                 } else {
-                    node.setPageRank(i, (float) StrictMath.log(0));
+//                    node.setPageRank(i, (float) StrictMath.log(0));
+                    node.setPageRank(idx, (float) StrictMath.log(0));
                     //node.setPageRank(idx, 0f);
                    // node.setPageRank(idx, (float) StrictMath.log(0));
                 }

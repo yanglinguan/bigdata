@@ -24,75 +24,41 @@ public class PersonalizedPageRankNode extends PageRankNode {
 
    // private ArrayListOfIntsWritable source;
 
-    private HMapIFW pageRank = new HMapIFW();
+    // private HMapIFW pageRank = new HMapIFW();
+
+    private ArrayListOfFloatsWritable pageRank;
 
 
     public PersonalizedPageRankNode() {
         super();
 
-       // pagerank = new ArrayListOfFloatsWritable(sourceNum);
     }
 
     public void setSourceNode(ArrayList<Integer> source) {
-        for(int s : source) {
-            pageRank.put(s, Float.NEGATIVE_INFINITY);
+        pageRank = new ArrayListOfFloatsWritable();
+        for(int s: source) {
+            pageRank.add(Float.NEGATIVE_INFINITY);
         }
     }
-
-//    public void setSourceNode(int sourceNum) {
-//        pagerank = new ArrayListOfFloatsWritable(sourceNum);
-//        source  = new ArrayListOfIntsWritable(sourceNum);
-//       // pageRank = new HMapIVW<>();
-//    }
-
-//    public void setSource(ArrayListOfIntsWritable s) {
-//        this.source = s;
-//    }
-
-//    public ArrayListOfIntsWritable getSource() {
-//        return this.source;
-//    }
 
     public float getPageRank(int source) {
         return pageRank.get(source);
     }
 
     public void setPageRank(int source, float p) {
-        pageRank.put(source, p);
-    }
+        //pageRank.put(source, p);
+        pageRank.set(source, p);
 
-    public void setPageRankList(HMapIFW prlist) {
-        if(prlist.size() != 3) {
-            System.out.println("pagerank size != 3**********************************");
-        }
-        for(MapIF.Entry e: prlist.entrySet()) {
-            this.pageRank.put(e.getKey(), e.getValue());
-        }
-        //this.pageRank = prlist;
     }
 
 
-
-//    public void setPageRank(int idx, float p) {
-//        this.pagerank.set(idx, p);
-//       // this.pageRank.put(idx, p);
-//    }
-
-//    public void setPageRankList(ArrayListOfFloatsWritable pageRankList){
-//        this.pagerank = pageRankList;
-//    }
-
-//    public int getSourceIndex(int s) {
-//        return source.indexOf(s);
-//    }
-
-//    public float getPageRankForSource(int s) {
-//        return pagerank.get(source.indexOf(s));
-//    }
-
-//    public ArrayListOfFloatsWritable getPageRankList() {
-//        return this.pagerank;
-//    }
+    public void setPageRankList(ArrayListOfFloatsWritable prlist) {
+        this.pageRank = prlist;
+//        pageRank.clear();
+//        for(float f: prlist) {
+//            pageRank.add(f);
+//        }
+    }
 
     @Override
     public void readFields(DataInput in) throws IOException {
@@ -103,7 +69,8 @@ public class PersonalizedPageRankNode extends PageRankNode {
 
 
         if (type.equals(Type.Mass)) {
-            pageRank = new HMapIFW();
+            //pageRank = new HMapIFW();
+            pageRank = new ArrayListOfFloatsWritable();
             pageRank.readFields(in);
 //            source = new ArrayListOfIntsWritable();
 //            source.readFields(in);
@@ -112,7 +79,8 @@ public class PersonalizedPageRankNode extends PageRankNode {
         }
 
         if (type.equals(Type.Complete)) {
-            pageRank = new HMapIFW();
+//            pageRank = new HMapIFW();
+            pageRank = new ArrayListOfFloatsWritable();
             pageRank.readFields(in);
 //            source = new ArrayListOfIntsWritable();
 //            source.readFields(in);
