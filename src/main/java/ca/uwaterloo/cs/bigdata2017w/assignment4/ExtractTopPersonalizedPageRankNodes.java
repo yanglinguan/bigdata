@@ -85,7 +85,7 @@ public class ExtractTopPersonalizedPageRankNodes extends Configured implements T
 
                 while (true) {
                     try {
-                        PageRankNode node = new PageRankNode();
+                        PersonalizedPageRankNode node = new PersonalizedPageRankNode();
                         IntWritable key = new IntWritable();
                         //int key = fin.readInt();
 
@@ -101,7 +101,7 @@ public class ExtractTopPersonalizedPageRankNodes extends Configured implements T
 
                         for (int s : SOURCE_NODES) {
                             if(node.getType() == PageRankNode.Type.Complete) {
-                                addTopList(s, (float) StrictMath.exp(node.getPageRank()), node.getNodeId());
+                                addTopList(s, (float) StrictMath.exp(node.getPageRank(s)), node.getNodeId());
                             }
                         }
 
@@ -121,6 +121,7 @@ public class ExtractTopPersonalizedPageRankNodes extends Configured implements T
                 String printString = String.format("%.5f %d", topList.get(s).get(i).getFirst(), topList.get(s).get(i).getSecond());
                 System.out.println(printString);
             }
+            System.out.println();
         }
     }
 

@@ -1,11 +1,13 @@
 package ca.uwaterloo.cs.bigdata2017w.assignment4;
 
 import org.apache.hadoop.io.FloatWritable;
+import sun.reflect.generics.reflectiveObjects.LazyReflectiveObjectGenerator;
 import tl.lin.data.array.ArrayListOfFloats;
 import tl.lin.data.array.ArrayListOfFloatsWritable;
 import tl.lin.data.array.ArrayListOfIntsWritable;
 import tl.lin.data.map.HMapIFW;
 import tl.lin.data.map.HMapIVW;
+import tl.lin.data.map.MapIF;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -33,7 +35,7 @@ public class PersonalizedPageRankNode extends PageRankNode {
 
     public void setSourceNode(ArrayList<Integer> source) {
         for(int s : source) {
-            pageRank.put(s, 0.0f);
+            pageRank.put(s, Float.NEGATIVE_INFINITY);
         }
     }
 
@@ -60,7 +62,13 @@ public class PersonalizedPageRankNode extends PageRankNode {
     }
 
     public void setPageRankList(HMapIFW prlist) {
-        this.pageRank = prlist;
+        if(prlist.size() != 3) {
+            System.out.println("pagerank size != 3**********************************");
+        }
+        for(MapIF.Entry e: prlist.entrySet()) {
+            this.pageRank.put(e.getKey(), e.getValue());
+        }
+        //this.pageRank = prlist;
     }
 
 
@@ -94,9 +102,8 @@ public class PersonalizedPageRankNode extends PageRankNode {
        // int size = in.readInt();
 
 
-        pageRank = new HMapIFW();
-
         if (type.equals(Type.Mass)) {
+            pageRank = new HMapIFW();
             pageRank.readFields(in);
 //            source = new ArrayListOfIntsWritable();
 //            source.readFields(in);
@@ -105,6 +112,7 @@ public class PersonalizedPageRankNode extends PageRankNode {
         }
 
         if (type.equals(Type.Complete)) {
+            pageRank = new HMapIFW();
             pageRank.readFields(in);
 //            source = new ArrayListOfIntsWritable();
 //            source.readFields(in);
