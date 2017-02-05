@@ -6,7 +6,6 @@ import org.apache.commons.cli.Options;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.*;
-import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -16,14 +15,8 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-import org.apache.hadoop.yarn.webapp.hamlet.HamletSpec;
 import org.apache.log4j.Logger;
-import scala.tools.cmd.gen.AnyVals;
-import scala.tools.nsc.backend.icode.TypeKinds;
-import sun.security.util.AuthResources_de;
-import tl.lin.data.array.ArrayListOfFloatsWritable;
 import tl.lin.data.array.ArrayListOfIntsWritable;
-import tl.lin.data.array.ArrayListOfLongs;
 import tl.lin.data.map.*;
 
 import java.io.IOException;
@@ -46,6 +39,87 @@ public class RunPersonalizedPageRankBasic extends Configured implements Tool {
     private static enum PageRank {
         nodes, edges, massMessages, massMessagesSaved, massMessagesReceived, missingStructure
     };
+
+
+    // Mapper, no in-mapper combining.
+    private static class MapClass extends
+            Mapper<IntWritable, PersonalizedPageRankNode, IntWritable, PersonalizedPageRankNode> {
+
+        // The neighbor to which we're sending messages.
+        private static final IntWritable neighbor = new IntWritable();
+
+        // Contents of the messages: partial PageRank mass.
+        private static final PersonalizedPageRankNode intermediateMass = new PersonalizedPageRankNode();
+
+        // For passing along node structure.
+        private static final PersonalizedPageRankNode intermediateStructure = new PersonalizedPageRankNode();
+
+        private static final ArrayList<Integer> source = new ArrayList<>();
+
+        //private static final HMapIFW mass = new HMapIFW();
+
+        @Override
+        public void setup(Context context) throws IOException {
+            // Note that this is needed for running in local mode due to mapper reuse.
+            // We wouldn't need this is distributed mode.
+            source.clear();
+            String s = context.getConfiguration().get(SOURCES_NODE, "");
+            if(s.equals("")) {
+                throw new RuntimeException(SOURCES_NODE + " cannot be null!");
+            }
+            for(String t: s.split(",")) {
+                source.add(Integer.parseInt(t));
+            }
+            //intermediateStructure.setSourceNode(source);
+        }
+
+        @Override
+        public void map(IntWritable nid, PersonalizedPageRankNode node, Context context)
+                throws IOException, InterruptedException {
+            // Pass along node structure.
+            intermediateStructure.setNodeId(node.getNodeId());
+            intermediateStructure.setType(PageRankNode.Type.Structure);
+            intermediateStructure.setAdjacencyList(node.getAdjacenyList());
+
+            context.write(nid, intermediateStructure);
+
+            int massMessages = 0;
+
+            // Distribute PageRank mass to neighbors (along outgoing edges).
+            if (node.getAdjacenyList().size() > 0) {
+                // Each neighbor gets an equal share of PageRank mass.
+                ArrayListOfIntsWritable list = node.getAdjacenyList();
+
+                //float mass = node.getPageRank() - (float) StrictMath.log(list.size());
+
+                HMapIFW mass = new HMapIFW();
+//
+                for(int s: source) {
+                    mass.put(s, node.getPageRank(s) - (float) StrictMath.log(list.size()));
+                }
+
+                context.getCounter(PageRank.edges).increment(list.size());
+
+                // Iterate over neighbors.
+                for (int i = 0; i < list.size(); i++) {
+                    neighbor.set(list.get(i));
+                    intermediateMass.setNodeId(list.get(i));
+                    intermediateMass.setType(PageRankNode.Type.Mass);
+                    intermediateMass.setPageRankList(mass);
+
+                    // Emit messages with PageRank mass to neighbors.
+                    context.write(neighbor, intermediateMass);
+                    massMessages++;
+                }
+            }
+
+            // Bookkeeping.
+            context.getCounter(PageRank.nodes).increment(1);
+            context.getCounter(PageRank.massMessages).increment(massMessages);
+        }
+    }
+
+
 
     // Mapper with in-mapper combiner optimization.
     private static class MapWithInMapperCombiningClass extends
@@ -622,7 +696,8 @@ public class RunPersonalizedPageRankBasic extends Configured implements Tool {
 
         job.setOutputKeyClass(IntWritable.class);
         job.setOutputValueClass(PersonalizedPageRankNode.class);
-        job.setMapperClass(MapWithInMapperCombiningClass.class);
+       // job.setMapperClass(MapWithInMapperCombiningClass.class);
+        job.setMapperClass(MapClass.class);
 
        // if (useCombiner) {
             job.setCombinerClass(CombineClass.class);
