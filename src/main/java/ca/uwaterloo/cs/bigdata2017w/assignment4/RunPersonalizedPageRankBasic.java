@@ -666,17 +666,17 @@ public class RunPersonalizedPageRankBasic extends Configured implements Tool {
             FSDataInputStream fin = fs.open(f.getPath());
             for(int t = 0; t < source.length; t++) {
                 float value = fin.readFloat();
-                LOG.warn("source: " + Integer.parseInt(source[t]) + " pageRank: " + value);
+              //  LOG.warn("source: " + Integer.parseInt(source[t]) + " pageRank: " + value);
                 mass.set(t, sumLogProbs(mass.get(t), value));
-                LOG.warn("source: " + Integer.parseInt(source[t]) + " pageRank mass: " + mass.get(t));
+             //   LOG.warn("source: " + Integer.parseInt(source[t]) + " pageRank mass: " + mass.get(t));
             }
             fin.close();
         }
-        LOG.warn("after read: ");
-
-        for(int t = 0; t < mass.size(); t++) {
-            LOG.warn("source: " + Integer.parseInt(source[t]) + " pageRank: " + mass.get(t));
-        }
+//        LOG.warn("after read: ");
+//
+//        for(int t = 0; t < mass.size(); t++) {
+//            LOG.warn("source: " + Integer.parseInt(source[t]) + " pageRank: " + mass.get(t));
+//        }
 
         return mass;
     }
