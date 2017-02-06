@@ -10,11 +10,7 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-import org.apache.hadoop.yarn.webapp.hamlet.HamletSpec;
 import org.apache.log4j.Logger;
-import scala.tools.cmd.gen.AnyVals;
-import tl.lin.data.array.ArrayListOfFloatsWritable;
-import tl.lin.data.array.FloatArrayWritable;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -40,16 +36,9 @@ public class ExtractTopPersonalizedPageRankNodes extends Configured implements T
 
     private static final ArrayList<Integer> SOURCE_NODES = new ArrayList<>();
 
-    private static int topValue = 0;
-
-   // private static ArrayList<SequenceFile.Reader> iter = new ArrayList<>();
-   // private static final ArrayList<ArrayList<Pair<Float, Integer>>> topList = new ArrayList<>();
-
     private static HashMap<Integer, ArrayList<Pair<Float, Integer>>> topList = new HashMap<>();
 
-    private void addTopList(int s, float p, int id) {
-        //int idx = SOURCE_NODES.indexOf(s);
-     //   LOG.info("key: " + id + ", page rank: " + p);
+    private void addTopList(int s, float p, int id, int topValue) {
         if(topList.containsKey(s)) {
             int size = Math.min(topValue, topList.get(s).size());
             if(size == 0) {
@@ -76,7 +65,7 @@ public class ExtractTopPersonalizedPageRankNodes extends Configured implements T
 
     }
 
-    private void getTop(String iterPath, FileSystem fs) throws IOException {
+    private void getTop(String iterPath, FileSystem fs, int topValue) throws IOException {
         for (FileStatus f : fs.listStatus(new Path(iterPath))) {
             if (f.getPath().getName().startsWith("part-")) {
                 LOG.info("file: " + f.getPath().getName());
@@ -87,27 +76,16 @@ public class ExtractTopPersonalizedPageRankNodes extends Configured implements T
                     try {
                         PersonalizedPageRankNode node = new PersonalizedPageRankNode();
                         IntWritable key = new IntWritable();
-                        //int key = fin.readInt();
 
                         reader.next(key, node);
 
-
-                       // LOG.info("type: " + node.getType());
                         if(node.getType() != PageRankNode.Type.Complete) {
                             break;
                         }
-                       // LOG.info("key: " + key + ", page rank: " + node.getPageRank() + " ");
-//                                + node.getPageRankList().get(1) + node.getPageRankList().get(2));
-
-//                        for (int s : SOURCE_NODES) {
-//                            if(node.getType() == PageRankNode.Type.Complete) {
-//                                addTopList(s, (float) StrictMath.exp(node.getPageRank(s)), node.getNodeId());
-//                            }
-//                        }
 
                         for(int i = 0; i < SOURCE_NODES.size(); i++) {
                             if(node.getType() == PageRankNode.Type.Complete) {
-                                addTopList(SOURCE_NODES.get(i), (float) StrictMath.exp(node.getPageRank(i)), node.getNodeId());
+                                addTopList(SOURCE_NODES.get(i), (float) StrictMath.exp(node.getPageRank(i)), node.getNodeId(), topValue);
                             }
                         }
 
@@ -120,7 +98,7 @@ public class ExtractTopPersonalizedPageRankNodes extends Configured implements T
         }
     }
 
-    private void writeResult(FileSystem fs, String outPath) {
+    private void writeResult(FileSystem fs, String outPath, int topValue) {
         for(int s: SOURCE_NODES) {
             System.out.println("Source: " + s);
             for(int i = 0; i < topValue; i++) {
@@ -168,26 +146,18 @@ public class ExtractTopPersonalizedPageRankNodes extends Configured implements T
         String outputPath = cmdline.getOptionValue(OUTPUT);
         int top = Integer.parseInt(cmdline.getOptionValue(TOP));
         String[] sourceNodes = cmdline.getOptionValue(SOURCE).split(",");
-        topValue = top;
 
         for(String s : sourceNodes) {
-
-//            topList.put(Integer.parseInt(s), new ArrayList<Float>(top));
-
             SOURCE_NODES.add(Integer.parseInt(s));
             topList.put(Integer.parseInt(s), new ArrayList<Pair<Float, Integer>>());
         }
 
         FileSystem fs = FileSystem.get(new Configuration());
 
-        getTop(inputPath, fs);
+        getTop(inputPath, fs, top);
 
-        writeResult(fs, outputPath);
-
-        //initialize(inputPath, fs);
+        writeResult(fs, outputPath, top);
 
         return 0;
-
-
     }
 }

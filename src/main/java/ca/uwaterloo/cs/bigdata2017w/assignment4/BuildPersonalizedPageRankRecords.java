@@ -33,8 +33,6 @@ public class BuildPersonalizedPageRankRecords extends Configured implements Tool
 
     private static final String SOURCES_NODE = "source nodes";
 
-   // private static final ArrayListOfIntsWritable SOURCE_NODES = new ArrayListOfIntsWritable();
-
     private static class MyMapper extends Mapper<LongWritable, Text, IntWritable, PersonalizedPageRankNode> {
         private static final IntWritable nid = new IntWritable();
         private static final PersonalizedPageRankNode node = new PersonalizedPageRankNode();
@@ -68,16 +66,9 @@ public class BuildPersonalizedPageRankRecords extends Configured implements Tool
                 //int idx = SOURCE_NODES.indexOf(i);
                 int idx = source.indexOf(i);
                 if(i == id) {
-//                    int idx = source.indexOf(i);
-//                    node.setPageRank(i, (float) StrictMath.log(1));
                     node.setPageRank(idx, (float) StrictMath.log(1));
-                   // node.setPageRank(idx, 1f);
-                   // node.setPageRank(idx, (float) StrictMath.log(1));
                 } else {
-//                    node.setPageRank(i, (float) StrictMath.log(0));
                     node.setPageRank(idx, (float) StrictMath.log(0));
-                    //node.setPageRank(idx, 0f);
-                   // node.setPageRank(idx, (float) StrictMath.log(0));
                 }
             }
 
