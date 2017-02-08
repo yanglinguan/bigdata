@@ -59,7 +59,7 @@ public class ExtractTopPersonalizedPageRankNodes extends Configured implements T
         } else {
             ArrayList<Pair<Float, Integer>> v = new ArrayList<>();
             v.add(new Pair<>(p, id));
-            LOG.info("added4 key: " + id + ", page rank: " + p);
+          // LOG.info("added4 key: " + id + ", page rank: " + p);
             topList.put(s, v);
         }
 
@@ -68,7 +68,7 @@ public class ExtractTopPersonalizedPageRankNodes extends Configured implements T
     private void getTop(String iterPath, FileSystem fs, int topValue) throws IOException {
         for (FileStatus f : fs.listStatus(new Path(iterPath))) {
             if (f.getPath().getName().startsWith("part-")) {
-                LOG.info("file: " + f.getPath().getName());
+               // LOG.info("file: " + f.getPath().getName());
                 SequenceFile.Reader reader = new SequenceFile.Reader(fs, f.getPath(), fs.getConf());
                 //FSDataInputStream fin = fs.open(f.getPath());
 
