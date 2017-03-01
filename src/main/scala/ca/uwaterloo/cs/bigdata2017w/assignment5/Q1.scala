@@ -3,9 +3,7 @@ package ca.uwaterloo.cs.bigdata2017w.assignment5
 import org.apache.log4j.Logger
 import org.apache.spark.{SparkConf, SparkContext}
 import org.rogach.scallop.ScallopConf
-
-import scala.collection.mutable.StringBuilder
-//import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.SparkSession
 
 
 /**
@@ -45,25 +43,43 @@ object Q1 {
 
     val args = new Conf(argv)
 
-    log.info("Input: " + args.input())
-    log.info("Date: " + args.date())
-
-    val conf = new SparkConf().setAppName("Q1")
-    val sc = new SparkContext(conf)
-
-    val textFile = sc.textFile(args.input() + "/lineitem.tbl");
-
     val d = args.date().toString
     val comp = new Comp()
 
-    val query = textFile
-      .flatMap(line => {
-        val t = line.split('|')
-        List(t(10))
-      })
-      .filter(x => comp.compare(x, d))
-      .count()
+    log.info("Input: " + args.input())
+    log.info("Date: " + args.date())
 
-    println("ANSWER=" + query)
+    if(args.parquet()) {
+      val sparkSession = SparkSession.builder.getOrCreate
+
+      val lineitemDF = sparkSession.read.parquet(args.input() + "/lineitem")
+      val lineitemRDD = lineitemDF.rdd
+      val query  = lineitemRDD.map(line => {
+        line.get(10).toString
+      }).filter(x => {
+        comp.compare(x, d)
+      })
+        .count()
+      println("ANSWER=" + query)
+
+    } else {
+
+      val conf = new SparkConf().setAppName("Q1")
+      val sc = new SparkContext(conf)
+
+      val textFile = sc.textFile(args.input() + "/lineitem.tbl");
+
+
+
+      val query = textFile
+        .flatMap(line => {
+          val t = line.split('|')
+          List(t(10))
+        })
+        .filter(x => comp.compare(x, d))
+        .count()
+
+      println("ANSWER=" + query)
+    }
   }
 }
