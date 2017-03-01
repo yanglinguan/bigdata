@@ -14,11 +14,11 @@ import scala.collection.mutable.StringBuilder
 
 class Conf(args: Seq[String]) extends ScallopConf(args) {
 //  mainOptions = Seq(input, date, text, parquet)
-  mainOptions = Seq(input, date)
+  mainOptions = Seq(input, date, text, parquet)
   val input = opt[String](descr = "input path", required = true)
   val date = opt[String](descr = "selection date", required = true)
-//  val text = opt[String](descr = "text", required = false)
-//  val parquet = opt[String](descr = "parquet", required = false)
+  val text = opt[Boolean](descr = "text")
+  val parquet = opt[Boolean](descr = "parquet")
   verify()
 }
 
@@ -28,27 +28,18 @@ class Comp() extends Serializable {
     val sd = shipDate.split('-')
     val size = sd.length
     var i = -1
-    val t = sd.filter(x => {
+    val t = sd.count(x => {
       i = i + 1
       x == d(i)
     })
-    size == t.length
-  }
-
-  def print(listString: List[String]) {
-    val s = new StringBuilder("(")
-    listString.foreach(x => {
-      s.append(x).append(",")
-    })
-    s.dropRight(1).append(")")
-    println(s.toString())
+    size == t
   }
 }
 
 
 object Q1 {
 
-  val log = Logger.getLogger(getClass().getName())
+  val log = Logger.getLogger(getClass.getName)
 
   def main(argv: Array[String]) {
 
@@ -62,7 +53,7 @@ object Q1 {
 
     val textFile = sc.textFile(args.input() + "/lineitem.tbl");
 
-    val d = args.date().toString()
+    val d = args.date().toString
     val comp = new Comp()
 
     val query = textFile
@@ -71,8 +62,7 @@ object Q1 {
         List(t(10))
       })
       .filter(x => comp.compare(x, d))
-      .map(x => 1)
-      .reduce(_+_)
+      .count()
 
     println("ANSWER=" + query)
   }

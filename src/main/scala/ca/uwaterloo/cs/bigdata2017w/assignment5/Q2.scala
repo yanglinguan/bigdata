@@ -20,34 +20,41 @@ object Q2 {
     log.info("Input: " + args.input())
     log.info("Date: " + args.date())
 
-    val conf = new SparkConf().setAppName("Q1")
+    val conf = new SparkConf().setAppName("Q2")
     val sc = new SparkContext(conf)
 
     val lineitem = sc.textFile(args.input() + "/lineitem.tbl");
     val orders = sc.textFile(args.input() + "/orders.tbl");
     val d = args.date().toString()
 
-    val l = lineitem
-      .flatMap(line => {
-        val t = line.split('|')
-        List((t(10), t(0)))
-      })
-      .filter(x => comp.compare(x._1, d))
-      .map(x => (x._2, "l"))
-
     val o = orders
       .flatMap(line => {
         val t = line.split('|')
+        //t(0) o_orderkey
+        //t(6) o_clerk
         List((t(0), t(6)))
       })
 
-    val x = l.cogroup(o)
-      .map(item => {
-        item._2._2.map(t=> {
-          comp.print(List(t, item._1))
-//          println("(" + t + "," + item._1 + ")")
+    lineitem
+      .flatMap(line => {
+        val t = line.split('|')
+        // t(0) l_orderkey
+        // t(10) l_shipdate
+        List((t(0), t(10)))
+      })
+      .filter(x => comp.compare(x._2, d))
+      .cogroup(o)
+      .flatMap(item => {
+        item._2._1.flatMap(t => {
+          item._2._2.map(y => {
+            (y, item._1)
+          })
         })
-      }).count()
-//    println("hello: " + x.count())
+      })
+      .sortBy(x => x._2)
+      .take(20)
+      .map(x => {
+        println(x._1, x._2)
+      })
   }
 }

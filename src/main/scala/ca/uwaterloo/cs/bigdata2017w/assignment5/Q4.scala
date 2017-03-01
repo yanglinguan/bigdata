@@ -21,7 +21,7 @@ object Q4 {
     log.info("Input: " + args.input())
     log.info("Date: " + args.date())
 
-    val conf = new SparkConf().setAppName("Q1")
+    val conf = new SparkConf().setAppName("Q5")
     val sc = new SparkContext(conf)
     val d = args.date().toString()
 
@@ -83,10 +83,11 @@ object Q4 {
       .sortBy(x => {
         x._1._1.toInt
       })
+      .collect()
       .map(x => {
-        val co = x._2.reduce(_+_)
-        println("(" + x._1._1 + "," + x._1._2 + "," + co.toString() + ")")
-      }).count()
+        val co = x._2.sum
+        println(x._1._1 , x._1._2 , co.toString())
+      })
   }
 
 }

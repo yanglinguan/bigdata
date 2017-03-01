@@ -8,7 +8,7 @@ import org.apache.spark.{SparkConf, SparkContext}
   */
 object Q6 {
 
-  val log = Logger.getLogger(getClass().getName())
+  val log = Logger.getLogger(getClass.getName)
 
 
   def main(argv: Array[String]) {
@@ -20,45 +20,38 @@ object Q6 {
     log.info("Input: " + args.input())
     log.info("Date: " + args.date())
 
-    val conf = new SparkConf().setAppName("Q1")
+    val conf = new SparkConf().setAppName("Q6")
     val sc = new SparkContext(conf)
     val d = args.date().toString()
 
     val lineitem = sc.textFile(args.input() + "/lineitem.tbl")
 
-    val l = lineitem
+    lineitem
       .flatMap(line => {
         val t = line.split('|')
-        List(((t(8), t(9)), (t(4), t(5), t(6), t(7), t(10))))
+        // t(4) quantity ._1
+        // t(5) extendedprice ._2
+        // t(6) discount ._3
+        // t(7) tax ._4
+        // t(10) shipdate ._5
+        List(((t(8), t(9)), (t(4).toInt, t(5).toFloat, t(6).toFloat, t(7).toFloat, t(10))))
       })
       .filter(x => {
         comp.compare(x._2._5, d)
       })
       .groupByKey()
+      .collect()
       .map(x => {
-        val c = x._2.count(x => true)
-        val s = x._2.reduce((y1, y2) => {
-          val sum_qty = (y1._1.toInt + y2._1.toInt).toString
-          val sum_base_price = (y1._2.toFloat + y2._2.toFloat).toString
-          val sum_disc_price = ((y1._2.toFloat * (1 - y1._3.toFloat)) + (y2._2.toFloat * (1 - y2._3.toFloat))).toString
-          val sum_charge = ((y1._2.toFloat * (1 - y1._3.toFloat) * (1 + y1._4.toFloat))
-            + y2._2.toFloat * (1 - y2._3.toFloat) * (1 + y2._4.toFloat)).toString
-          val sum_discount = (y1._3.toFloat + y2._3.toFloat).toString
-
-          (sum_qty , sum_base_price, sum_disc_price, sum_charge,
-            sum_discount)
-
+        val s = x._2.map(t => {
+          (1, t._1, t._2, t._2 *(1-t._3), t._2 * (1 - t._3) * (1 + t._4), t._3)
+        }).reduce((y1, y2) => {
+          (y1._1 + y2._1, y1._2 + y2._2, y1._3 + y2._3, y1._4 + y2._4, y1._5 + y2._5, y1._6 + y2._6)
         })
-        val avg_qty = (s._1.toFloat / c.toFloat).toString
-        val avg_price = (s._2.toFloat / c.toInt).toString
-        val avg_disc = (s._5.toFloat / c.toInt).toString
-        println("(" + x._1._1 + "," + x._1._2 + "," + s._1 , s._2, s._3, s._4,
-          s._5, avg_qty, avg_price, avg_disc + ")")
-        ""
 
-      }).count()
-
-
+        val avg_qty = s._2.toFloat / s._1
+        val avg_price = s._3.toFloat / s._1
+        val avg_disc = s._6.toFloat / s._1
+        println(x._1._1, x._1._2 , s._2 , s._3, s._4, s._5, avg_qty, avg_price, avg_disc, s._1 )
+      })
   }
-
 }
