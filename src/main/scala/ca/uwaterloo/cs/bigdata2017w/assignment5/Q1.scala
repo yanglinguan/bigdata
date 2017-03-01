@@ -16,7 +16,7 @@ class Conf(args: Seq[String]) extends ScallopConf(args) {
 //  mainOptions = Seq(input, date, text, parquet)
   mainOptions = Seq(input, date, text, parquet)
   val input = opt[String](descr = "input path", required = true)
-  val date = opt[String](descr = "selection date", required = true)
+  val date = opt[String](descr = "selection date", required = false)
   val text = opt[Boolean](descr = "text")
   val parquet = opt[Boolean](descr = "parquet")
   verify()

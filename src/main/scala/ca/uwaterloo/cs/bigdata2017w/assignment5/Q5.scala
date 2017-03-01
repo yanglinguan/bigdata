@@ -4,10 +4,9 @@ import org.apache.log4j.Logger
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
-  * Created by yanglinguan on 17/2/27.
+  * Created by yanglinguan on 17/2/28.
   */
-
-object Q4 {
+object Q5 {
 
   val log = Logger.getLogger(getClass().getName())
 
@@ -16,25 +15,21 @@ object Q4 {
 
     val args = new Conf(argv)
 
-    val comp = new Comp()
-
     log.info("Input: " + args.input())
-    log.info("Date: " + args.date())
 
     val conf = new SparkConf().setAppName("Q5")
     val sc = new SparkContext(conf)
-    val d = args.date().toString()
 
     val lineitem = sc.textFile(args.input() + "/lineitem.tbl")
     val orders = sc.textFile(args.input() + "/orders.tbl")
     val customer = sc.textFile(args.input() + "/customer.tbl")
     val nation = sc.textFile(args.input() + "/nation.tbl")
 
-
-
     val o = orders
       .flatMap(line => {
         val t = line.split('|')
+        // t(0) o_orderkey
+        // t(1) o_custkey
         List((t(0), t(1)))
       })
 
@@ -49,45 +44,48 @@ object Q4 {
         val t = line.split('|')
         List((t(0), t(1)))
       })
+      .filter(x => x._2 == "CANADA" || x._2 == "UNITED STATES")
 
     lineitem
       .flatMap(line => {
         val t = line.split('|')
-        List((t(0), t(10)))
+        List((t(0), t(10).dropRight(3)))
       })
-      .filter(x => comp.compare(x._2, d)).cogroup(o)
+      .cogroup(o)
       .flatMap(x => {
         x._2._1.flatMap(y => {
+          // y shipdate
           x._2._2.map(z => {
-            (z, 1)
+            // z custkey
+            (z, y)
           })
         })
       })
       .cogroup(c)
       .flatMap(x => {
         x._2._1.flatMap(y => {
+          // y: shipdate
           x._2._2.map(z => {
-            (z, 1)
+            // z: nationalkey
+            (z, y)
           })
         })
       })
       .cogroup(n)
       .flatMap(x => {
         x._2._1.flatMap(y => {
+          // y shipdate
           x._2._2.map(z => {
-            ((x._1, z), 1)
+            // z name
+            ((x._1.toInt, z, y), 1)
           })
         })
       })
       .groupByKey()
-      .sortBy(x => {
-        x._1._1.toInt
-      })
+      .sortByKey()
       .collect()
       .map(x => {
-        val co = x._2.sum
-        println(x._1._1 , x._1._2 , co.toString())
+        println(x._1._1, x._1._2, x._1._3, x._2.sum)
       })
   }
-
 }
