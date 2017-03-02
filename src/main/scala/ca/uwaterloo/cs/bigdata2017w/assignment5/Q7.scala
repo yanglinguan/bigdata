@@ -21,7 +21,7 @@ object Q7 {
     } else if(t(0) == dt(0)) {
       if(t(1) < dt(1)) {
         smaller
-      } else if(t(1) == t(0)) {
+      } else if(t(1) == dt(1)) {
         if(t(2) < dt(2)) {
           smaller
         } else if(t(2) == dt(2)) {
@@ -184,7 +184,9 @@ object Q7 {
           // t(0) c_custkey
           // t(1) c_name
           List((t(0).toInt, t(1)))
-        })
+        }).collectAsMap()
+
+      val bcC = sc.broadcast(c)
 
       lineitem
         .flatMap(line => {
@@ -206,37 +208,17 @@ object Q7 {
             x._2._1.map(z => {
               // z._1: l_extendedprice
               // z._2: l_discount
-              (y._1, (x._1, y._2, y._3, z._1, z._2))
+              val name = bcC.value.getOrElse(y._1, "")
+              ((name, x._1, y._2, y._3), z._1 * (1 - z._2))
             })
           })
         })
-        .cogroup(c)
-        .flatMap(x => {
-          // key: custkey
-          x._2._1.flatMap(y => {
-            //y._1: orderkey
-            //y._2: o_orderdate
-            //y._3: o_shippriority
-            //y._4: l_extendedprice
-            //y._5: l_discount
-            x._2._2.map(z => {
-              //z c_name
-              ((z, y._1, y._2, y._3), (y._4, y._5))
-            })
-          })
-        })
-        .groupByKey()
-        .map(x => {
-          val revenue = x._2.map(y => {
-            y._1 * (1 - y._2)
-          }).sum
-          (x._1, revenue)
-        })
+        .reduceByKey(_+_)
         .sortBy(x => {
           x._2
         }, false)
         .collect()
-       // .take(10)
+        .take(10)
         .map(x => {
           // x._1._1 c_name
           // x._1._2 orderkey
