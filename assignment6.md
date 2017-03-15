@@ -19,6 +19,7 @@ What is the 1-ROCA% score of a single classifier trained on all available traini
 1-ROCA%: 15.13
 
 ## Question 5
+The 1-ROCA% scores for 10 trials:  
 * 1-ROCA%: 14.14
 * 1-ROCA%: 16.33
 * 1-ROCA%: 15.59
@@ -29,3 +30,4 @@ What is the 1-ROCA% score of a single classifier trained on all available traini
 * 1-ROCA%: 19.29
 * 1-ROCA%: 15.75
 * 1-ROCA%: 18.20
+The overall average is 16.129
