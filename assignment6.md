@@ -29,5 +29,5 @@ The 1-ROCA% scores for 10 trials:
 * 1-ROCA%: 16.36
 * 1-ROCA%: 19.29
 * 1-ROCA%: 15.75
-* 1-ROCA%: 18.20
+* 1-ROCA%: 18.20  
 The overall average is 16.129
