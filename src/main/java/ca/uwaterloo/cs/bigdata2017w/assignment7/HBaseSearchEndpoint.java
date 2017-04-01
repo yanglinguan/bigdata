@@ -1,5 +1,9 @@
 package ca.uwaterloo.cs.bigdata2017w.assignment7;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.sun.jersey.api.core.ResourceConfig;
+import com.sun.jersey.spi.container.servlet.ServletContainer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -7,6 +11,8 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
@@ -19,17 +25,29 @@ import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 import org.kohsuke.args4j.ParserProperties;
-//import org.springframework.boot.SpringApplication;
-//import org.springframework.boot.autoconfigure.SpringBootApplication;
-//import org.springframework.web.bind.annotation.RequestMapping;
-//import org.springframework.web.bind.annotation.RestController;
+import org.mortbay.jetty.Server;
+import org.mortbay.jetty.servlet.ServletHolder;
+import scala.util.parsing.json.JSONObject;
+import scala.util.parsing.json.JSONObject$;
 import tl.lin.data.array.ArrayListWritable;
 import tl.lin.data.pair.PairOfInts;
+import tl.lin.data.pair.PairOfWritables;
+//import org.springframework.boot.SpringApplication;
+//import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+//import org.springframework.boot.autoconfigure.SpringBootApplication;
+//import org.springframework.boot.builder.SpringApplicationBuilder;
+//import org.springframework.stereotype.Controller;
+//import org.springframework.web.bind.annotation.RequestMapping;
+//import org.springframework.web.bind.annotation.RequestParam;
+//import org.springframework.web.bind.annotation.RestController;
+//import tl.lin.data.array.ArrayListWritable;
+//import tl.lin.data.pair.PairOfInts;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.EOFException;
-import java.io.IOException;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -37,107 +55,38 @@ import java.util.*;
  */
 
 
+
 //@SpringBootApplication
 //@RestController
-//public class HBaseSearchEndpoint extends Configured implements Tool {
-//
-////    private Stack<Set<Integer>> stack;
-////    private Table index;
-////    private Table collection;
-//
-//    private HBaseSearchEndpoint() {}
-//
-//    private static final class Args {
-//        @Option(name = "-config", metaVar = "[path]", required = true, usage = "HBase config")
-//        public String config;
-//
-//        @Option(name = "-index", metaVar = "[path]", required = true, usage = "index path")
-//        String index;
-//
-//        @Option(name = "-collection", metaVar = "[path]", required = true, usage = "collection path")
-//        String collection;
-//
-//        @Option(name = "-port", metaVar = "[]", required = true, usage = "port")
-//        int port;
-//    }
-//
-////    @RequestMapping("/")
-////    public String home() {
-////        return "Hello World!";
-////    }
-//
-//    @Override
-//    public int run(String[] argv) throws Exception {
-//
-//        final Args args = new Args();
-//        CmdLineParser parser = new CmdLineParser(args, ParserProperties.defaults().withUsageWidth(100));
-//
-//        try {
-//            parser.parseArgument(argv);
-//        } catch (CmdLineException e) {
-//            System.err.println(e.getMessage());
-//            parser.printUsage(System.err);
-//            return -1;
-//        }
-//
-//        if (args.collection.endsWith(".gz")) {
-//            System.out.println("gzipped collection is not seekable: use compressed version!");
-//            return -1;
-//        }
-//
-//        Configuration conf = getConf();
-//        conf.addResource(new Path(args.config));
-//
-//        Configuration hbaseConfig = HBaseConfiguration.create(conf);
-//        Connection connection = ConnectionFactory.createConnection(hbaseConfig);
-////        index = connection.getTable(TableName.valueOf(args.index));
-////        collection = connection.getTable(TableName.valueOf(args.collection));
-////        stack = new Stack<>();
-//
-////        SpringApplication.run(HBaseSearchEndpoint.class, argv);
-//
-////        ResourceConfig config = new ResourceConfig();
-////        config.packages("ca.uwaterloo.cs.bigdata2017w.assignment7");
-////
-////        Map<String,Object> initMap = new HashMap<>();
-////        initMap.put("index", connection.getTable(TableName.valueOf(args.index)));
-////        initMap.put("connection", connection.getTable(TableName.valueOf(args.collection)));
-////
-////        config.setProperties(initMap);
-////
-////        ServletHolder servlet = new ServletHolder(new ServletContainer(config));
-////        Server server = new Server(args.port);
-////        ServletContextHandler context = new ServletContextHandler(server, "/*");
-////        context.addServlet(servlet, "/*");
-////
-////        try {
-////            server.start();
-////            server.join();
-////        } finally {
-////            server.destroy();
-////        }
-//
-//
-//        return 1;
-//    }
-//
-//
-//    public static void main(String[] args) throws Exception {
-//        //new JHades().overlappingJarsReport();
-//        ToolRunner.run(new HBaseSearchEndpoint(), args);
-//    }
-//}
-
-
-public class HBaseSearchEndpoint extends Configured implements Tool {
+public class HBaseSearchEndpoint
+        extends Configured
+        implements Tool
+{
 
     private Stack<Set<Integer>> stack;
     private Table index;
     private Table collection;
 
+    public class QueryResult {
+        public int docid;
+        public String text;
+        public QueryResult(int docid, String text) {
+            this.docid = docid;
+            this.text = text;
+        }
+
+    }
+
+
     private HBaseSearchEndpoint() {}
 
-    private HashMap<Integer, String> runQuery(String q) throws IOException {
+    private void initialize(String indexPath, String collectionPath, Connection connection) throws IOException {
+        index = connection.getTable(TableName.valueOf(indexPath));
+        collection = connection.getTable(TableName.valueOf(collectionPath));
+        stack = new Stack<>();
+    }
+
+    private List<QueryResult> runQuery(String q) throws IOException {
         String[] terms = q.split("\\s+");
 
         for (String t : terms) {
@@ -151,14 +100,16 @@ public class HBaseSearchEndpoint extends Configured implements Tool {
         }
 
         Set<Integer> set = stack.pop();
-        HashMap<Integer, String> result = new HashMap<>();
+
+        List<QueryResult> results = new ArrayList<>();
 
         for (Integer i : set) {
             String line = fetchLine(i);
-            result.put(i, line);
+            QueryResult r = new QueryResult(i, line);
+            results.add(r);
             System.out.println(i + "\t" + line);
         }
-        return result;
+        return results;
     }
 
     private void pushTerm(String term) throws IOException {
@@ -208,9 +159,11 @@ public class HBaseSearchEndpoint extends Configured implements Tool {
     }
 
     private ArrayListWritable<PairOfInts> fetchPostings(String term) throws IOException {
+        Text key = new Text();
+        //PairOfWritables<IntWritable, ArrayListWritable<PairOfInts>> value = new PairOfWritables<>();
 
         ArrayListWritable<PairOfInts> x = new ArrayListWritable<>();
-
+        key.set(term);
         Get get = new Get(Bytes.toBytes(term));
         Result result = index.get(get);
         byte[] posting = result.getValue(BuildInvertedIndexHBase.PO, BuildInvertedIndexHBase.POSTING);
@@ -241,6 +194,42 @@ public class HBaseSearchEndpoint extends Configured implements Tool {
         return d.length() > 80 ? d.substring(0, 80) + "..." : d;
     }
 
+
+
+
+    public class HomeServlet extends HttpServlet {
+
+        public void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException,
+                IOException {
+
+            String q = req.getParameterValues("query")[0];
+            if (req.getParameterValues("query") != null) {
+                System.out.println(req.getParameterValues("query")[0]);
+            }
+            List<QueryResult> results = runQuery(q);
+//            List<QueryResult> results = new ArrayList<>();
+//            results.add(new QueryResult(425450, "  CELIA. No; when Nature hath made a fair creature, may she not by"));
+//            results.add(new QueryResult(1553567, "    Disguise fair nature with hard-favour'd rage;"));
+//            results.add(new QueryResult(5327159, "  Showing fair nature is both kind and tame;"));
+
+            res.setCharacterEncoding("UTF-8");
+            res.setContentType("application/json");
+            PrintWriter out = res.getWriter();
+
+            GsonBuilder builder = new GsonBuilder();
+            builder.disableHtmlEscaping();
+            Gson gson = builder.create();
+            String json = gson.toJson(results);
+
+            //out.println("hello");
+            out.println(json);
+            out.close();
+        }
+
+    }
+
+
+
     private static final class Args {
         @Option(name = "-config", metaVar = "[path]", required = true, usage = "HBase config")
         public String config;
@@ -269,6 +258,7 @@ public class HBaseSearchEndpoint extends Configured implements Tool {
         try {
             parser.parseArgument(argv);
         } catch (CmdLineException e) {
+            System.out.println("herer");
             System.err.println(e.getMessage());
             parser.printUsage(System.err);
             return -1;
@@ -284,11 +274,44 @@ public class HBaseSearchEndpoint extends Configured implements Tool {
 
         Configuration hbaseConfig = HBaseConfiguration.create(conf);
         Connection connection = ConnectionFactory.createConnection(hbaseConfig);
-        index = connection.getTable(TableName.valueOf(args.index));
-        collection = connection.getTable(TableName.valueOf(args.collection));
-        stack = new Stack<>();
+
+        initialize(args.index, args.collection, connection);
+
+        Server server = new Server(args.port);
+
+        org.mortbay.jetty.servlet.Context root = new org.mortbay.jetty.servlet.Context(server, "/",
+                org.mortbay.jetty.servlet.Context.SESSIONS);
+
+        root.addServlet(new ServletHolder(new HomeServlet()), "/search");
 
 
+        try {
+            server.start();
+            server.join();
+        } finally {
+            server.destroy();
+        }
+
+
+
+//        Configuration conf = getConf();
+//        conf.addResource(new Path(args.config));
+//
+//        Configuration hbaseConfig = HBaseConfiguration.create(conf);
+//        Connection connection = ConnectionFactory.createConnection(hbaseConfig);
+////        index = connection.getTable(TableName.valueOf(args.index));
+////        collection = connection.getTable(TableName.valueOf(args.collection));
+////        stack = new Stack<>();
+//
+//        System.out.println("start....");
+//
+//        HashMap<String, Object> props = new HashMap<>();
+//        props.put("server.port", args.port);
+//
+//        new SpringApplicationBuilder()
+//                .sources(HBaseSearchEndpoint.class)
+//                .properties(props)
+//                .run(argv);
 
         return 1;
     }
@@ -296,7 +319,58 @@ public class HBaseSearchEndpoint extends Configured implements Tool {
     /**
      * Dispatches command-line arguments to the tool via the {@code ToolRunner}.
      */
-    public static void main(String[] args) throws Exception {
-        ToolRunner.run(new HBaseSearchEndpoint(), args);
+    public static void main(String[] arg) throws Exception {
+//        final Args args = new Args();
+//        CmdLineParser parser = new CmdLineParser(args, ParserProperties.defaults().withUsageWidth(100));
+//
+//        try {
+//            parser.parseArgument(arg);
+//        } catch (CmdLineException e) {
+//            System.out.println("herer");
+//            System.err.println(e.getMessage());
+//            parser.printUsage(System.err);
+//            return;
+//        }
+//
+//        HashMap<String, Object> props = new HashMap<>();
+//        props.put("index", args.index);
+//        props.put("collection", args.collection);
+       //props.put("server.port", args.port);
+
+
+        //ResourceConfig config = new ResourceConfig();
+        //config.packages("ca.uwaterloo.cs.bigdata2017w.assignment7");
+        //config.setProperties(props);
+       // ServletHolder servlet = new ServletHolder(new ServletContainer(config));
+
+//        Server server = new Server(args.port);
+//
+//       // ServletContextHandler context = new ServletContextHandler(server, "/");
+//
+//       // context.addServlet(servlet, "/*");
+//
+//        org.mortbay.jetty.servlet.Context root = new org.mortbay.jetty.servlet.Context(server, "/",
+//                org.mortbay.jetty.servlet.Context.SESSIONS);
+//
+//        root.addServlet(new ServletHolder(new HomeServlet()), "/");
+//
+//
+//        //try {
+//            server.start();
+//            server.join();
+//        } finally {
+//            server.destroy();
+//        }
+
+
+
+//        new SpringApplicationBuilder()
+//                .sources(HBaseSearchEndpoint.class)
+//                .properties(props)
+//                .run(arg);
+
+//        SpringApplication.run(HBaseSearchEndpoint.class, arg);
+
+        ToolRunner.run(new HBaseSearchEndpoint(), arg);
     }
 }
