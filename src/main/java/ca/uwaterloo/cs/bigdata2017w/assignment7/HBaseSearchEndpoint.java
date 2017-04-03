@@ -2,8 +2,6 @@ package ca.uwaterloo.cs.bigdata2017w.assignment7;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.spi.container.servlet.ServletContainer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -11,37 +9,18 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-//import org.eclipse.jetty.server.Server;
-//import org.eclipse.jetty.servlet.ServletContextHandler;
-//import org.eclipse.jetty.servlet.ServletHolder;
-//import org.glassfish.jersey.server.ResourceConfig;
-//import org.glassfish.jersey.servlet.ServletContainer;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 import org.kohsuke.args4j.ParserProperties;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.ServletHolder;
-import scala.util.parsing.json.JSONObject;
-import scala.util.parsing.json.JSONObject$;
 import tl.lin.data.array.ArrayListWritable;
 import tl.lin.data.pair.PairOfInts;
-import tl.lin.data.pair.PairOfWritables;
-//import org.springframework.boot.SpringApplication;
-//import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-//import org.springframework.boot.autoconfigure.SpringBootApplication;
-//import org.springframework.boot.builder.SpringApplicationBuilder;
-//import org.springframework.stereotype.Controller;
-//import org.springframework.web.bind.annotation.RequestMapping;
-//import org.springframework.web.bind.annotation.RequestParam;
-//import org.springframework.web.bind.annotation.RestController;
-//import tl.lin.data.array.ArrayListWritable;
-//import tl.lin.data.pair.PairOfInts;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -55,9 +34,6 @@ import java.util.*;
  */
 
 
-
-//@SpringBootApplication
-//@RestController
 public class HBaseSearchEndpoint
         extends Configured
         implements Tool
@@ -107,7 +83,7 @@ public class HBaseSearchEndpoint
             String line = fetchLine(i);
             QueryResult r = new QueryResult(i, line);
             results.add(r);
-            System.out.println(i + "\t" + line);
+//            System.out.println(i + "\t" + line);
         }
         return results;
     }
@@ -203,9 +179,9 @@ public class HBaseSearchEndpoint
                 IOException {
 
             String q = req.getParameterValues("query")[0];
-            if (req.getParameterValues("query") != null) {
-                System.out.println(req.getParameterValues("query")[0]);
-            }
+//            if (req.getParameterValues("query") != null) {
+//                System.out.println(req.getParameterValues("query")[0]);
+//            }
             List<QueryResult> results = runQuery(q);
 //            List<QueryResult> results = new ArrayList<>();
 //            results.add(new QueryResult(425450, "  CELIA. No; when Nature hath made a fair creature, may she not by"));
@@ -221,7 +197,6 @@ public class HBaseSearchEndpoint
             Gson gson = builder.create();
             String json = gson.toJson(results);
 
-            //out.println("hello");
             out.println(json);
             out.close();
         }
@@ -292,27 +267,6 @@ public class HBaseSearchEndpoint
             server.destroy();
         }
 
-
-
-//        Configuration conf = getConf();
-//        conf.addResource(new Path(args.config));
-//
-//        Configuration hbaseConfig = HBaseConfiguration.create(conf);
-//        Connection connection = ConnectionFactory.createConnection(hbaseConfig);
-////        index = connection.getTable(TableName.valueOf(args.index));
-////        collection = connection.getTable(TableName.valueOf(args.collection));
-////        stack = new Stack<>();
-//
-//        System.out.println("start....");
-//
-//        HashMap<String, Object> props = new HashMap<>();
-//        props.put("server.port", args.port);
-//
-//        new SpringApplicationBuilder()
-//                .sources(HBaseSearchEndpoint.class)
-//                .properties(props)
-//                .run(argv);
-
         return 1;
     }
 
@@ -320,57 +274,6 @@ public class HBaseSearchEndpoint
      * Dispatches command-line arguments to the tool via the {@code ToolRunner}.
      */
     public static void main(String[] arg) throws Exception {
-//        final Args args = new Args();
-//        CmdLineParser parser = new CmdLineParser(args, ParserProperties.defaults().withUsageWidth(100));
-//
-//        try {
-//            parser.parseArgument(arg);
-//        } catch (CmdLineException e) {
-//            System.out.println("herer");
-//            System.err.println(e.getMessage());
-//            parser.printUsage(System.err);
-//            return;
-//        }
-//
-//        HashMap<String, Object> props = new HashMap<>();
-//        props.put("index", args.index);
-//        props.put("collection", args.collection);
-       //props.put("server.port", args.port);
-
-
-        //ResourceConfig config = new ResourceConfig();
-        //config.packages("ca.uwaterloo.cs.bigdata2017w.assignment7");
-        //config.setProperties(props);
-       // ServletHolder servlet = new ServletHolder(new ServletContainer(config));
-
-//        Server server = new Server(args.port);
-//
-//       // ServletContextHandler context = new ServletContextHandler(server, "/");
-//
-//       // context.addServlet(servlet, "/*");
-//
-//        org.mortbay.jetty.servlet.Context root = new org.mortbay.jetty.servlet.Context(server, "/",
-//                org.mortbay.jetty.servlet.Context.SESSIONS);
-//
-//        root.addServlet(new ServletHolder(new HomeServlet()), "/");
-//
-//
-//        //try {
-//            server.start();
-//            server.join();
-//        } finally {
-//            server.destroy();
-//        }
-
-
-
-//        new SpringApplicationBuilder()
-//                .sources(HBaseSearchEndpoint.class)
-//                .properties(props)
-//                .run(arg);
-
-//        SpringApplication.run(HBaseSearchEndpoint.class, arg);
-
         ToolRunner.run(new HBaseSearchEndpoint(), arg);
     }
 }
